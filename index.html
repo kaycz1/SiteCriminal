@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>A Rosa Negra - Suporte Investigativo 3D</title>
+  <meta name="description" content="Sistema de suporte policial digital e mapeamento 3D para o Caso A Rosa Negra.">
+  <link rel="stylesheet" href="/style.css">
+  
+  <!-- Carregamento do Three.js para modelagem e renderização interativa 3D -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- CENTRAL DE INVESTIGAÇÃO HUD -->
+  <div id="hud-container">
+    
+    <!-- TOAST NOTIFICATIONS (Alertas do IML e Perícia) -->
+    <div id="hud-notifications"></div>
+
+    <!-- CABEÇALHO DO TERMINAL POLICIAL -->
+    <header id="hud-header">
+      <div class="hud-top-row">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div class="hud-avatar-circle" id="header-avatar-container" style="width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--color-yellow); overflow: hidden; background: var(--bg-dark); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;" onclick="Engine.setStage(1)" title="Editar Detetive">
+            <!-- O SVG do avatar será injetado dinamicamente -->
+          </div>
+          <div style="display: flex; flex-direction: column; justify-content: center;">
+            <h1 class="hud-title" style="margin: 0; font-size: 0.95rem; line-height: 1.2;">
+              <span>ROSA NEGRA</span> 
+            </h1>
+            <span id="header-detective-name" style="font-family: var(--font-mono); font-size: 0.6rem; color: var(--color-yellow); opacity: 0.8; letter-spacing: 0.5px;">DETETIVE: ANÔNIMO</span>
+          </div>
+        </div>
+        <span class="hud-system-status" id="hud-case-tag">CONEXÃO ATIVA</span>
+        <div class="hud-controls">
+          <button id="hud-mute" class="hud-btn">🔊 SOM</button>
+          <button id="hud-reset" class="hud-btn">🔄 REINICIAR</button>
+        </div>
+      </div>
+      <!-- Barra de Progresso de Pistas e Etapas -->
+      <div class="hud-progress-container">
+        <div id="hud-progress-fill"></div>
+      </div>
+    </header>
+
+    <!-- NAVEGAÇÃO SUPERIOR DE 7 ETAPAS -->
+    <nav id="hud-navigation">
+      <ul id="hud-nav-list">
+        <!-- Gerado dinamicamente via js/ui.js -->
+      </ul>
+    </nav>
+
+    <!-- ÁREA PRINCIPAL DOS MÓDULOS DE ETAPAS -->
+    <main id="hud-body">
+
+      <!-- ETAPA 1: IDENTIFICAÇÃO (CRIAÇÃO DE PERSONAGEM) -->
+      <section id="stage-identification" class="stage-container">
+        <div class="glass intro-case-card">
+          <h2 class="yellow-glow">CREDENCIAMENTO DE AGENTE DE SEGURANÇA</h2>
+          <p style="font-size: 0.75rem; color: var(--color-gray); margin-bottom: 12px;">
+            Identifique-se e equipe-se com os itens de campo antes de assumir o comando das investigações do caso.
+          </p>
+        </div>
+
+        <div class="char-creator-grid">
+          <!-- Coluna Esquerda: Formulário e Acessórios -->
+          <div class="glass char-creator-form">
+            <h3 style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-yellow); margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
+              FICHA DE REGISTRO
+            </h3>
+            
+            <div class="form-group">
+              <label for="char-name">🕵️‍♂️ NOME DO DETETIVE (Max 12 car.):</label>
+              <input type="text" id="char-name" class="form-select" maxlength="12" placeholder="Digite seu nome..." style="background: rgba(0,0,0,0.3); color: #fff; width: 100%; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 6px; font-family: inherit; font-size: 0.8rem; box-sizing: border-box; text-transform: uppercase;">
+            </div>
+
+            <div class="form-group" style="margin-top: 12px;">
+              <label for="char-age">🎂 IDADE (1 - 99):</label>
+              <input type="number" id="char-age" class="form-select" min="1" max="99" value="28" style="background: rgba(0,0,0,0.3); color: #fff; width: 100%; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 6px; font-family: inherit; font-size: 0.8rem; box-sizing: border-box;">
+            </div>
+
+            <h3 style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-yellow); margin-top: 20px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
+              GÊNERO
+            </h3>
+            <div class="gender-picker" style="display: flex; gap: 10px; margin-bottom: 15px;">
+              <button class="gender-btn glass-btn" data-gender="masculino" style="flex: 1;">👨 Masculino</button>
+              <button class="gender-btn glass-btn" data-gender="feminino" style="flex: 1;">👩 Feminino</button>
+            </div>
+
+            <h3 style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-yellow); margin-top: 20px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
+              TOM DE PELE
+            </h3>
+            <div class="skin-tone-picker" style="display: flex; gap: 10px; margin-bottom: 15px;">
+              <button class="skin-btn" data-color="#ffdbac" style="background: #ffdbac; width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; outline: none;"></button>
+              <button class="skin-btn" data-color="#f5cba7" style="background: #f5cba7; width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; outline: none;"></button>
+              <button class="skin-btn" data-color="#e2a76f" style="background: #e2a76f; width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; outline: none;"></button>
+              <button class="skin-btn" data-color="#c68642" style="background: #c68642; width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; outline: none;"></button>
+              <button class="skin-btn" data-color="#8d5524" style="background: #8d5524; width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; outline: none;"></button>
+            </div>
+
+            <h3 style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-yellow); margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
+              VESTUÁRIO DE OPERAÇÃO
+            </h3>
+            <div class="outfit-picker-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px;">
+              <button class="outfit-btn glass-btn" data-outfit="trenchcoat">🧥 Sobretudo</button>
+              <button class="outfit-btn glass-btn" data-outfit="suit">👔 Terno & Gravata</button>
+              <button class="outfit-btn glass-btn" data-outfit="leather">🧥 Jq. Couro</button>
+              <button class="outfit-btn glass-btn" data-outfit="tactical">🎖️ Jq. Tática</button>
+            </div>
+
+            <h3 style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-yellow); margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
+              ACESSÓRIOS DE INVESTIGAÇÃO
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <label class="toggle-container" style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer; color: var(--color-gray);">
+                <input type="checkbox" id="char-acc-hat" checked style="cursor: pointer;"> 🎩 Chapéu Fedora Clássico
+              </label>
+              <label class="toggle-container" style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer; color: var(--color-gray);">
+                <input type="checkbox" id="char-acc-glasses" checked style="cursor: pointer;"> 🕶️ Óculos de Espionagem
+              </label>
+              <label class="toggle-container" style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer; color: var(--color-gray);">
+                <input type="checkbox" id="char-acc-mustache" style="cursor: pointer;"> 👨 Bigode Retro
+              </label>
+            </div>
+
+            <!-- Hair Customization Section -->
+            <div id="hair-section" style="display: none; margin-top: 15px;">
+              <h3 style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-yellow); margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">
+                CABELO (SEM CHAPÉU)
+              </h3>
+              <div class="hair-type-picker" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button class="hair-type-btn outfit-btn" data-hair-type="cabelo" style="flex: 1;">💇 Com Cabelo</button>
+                <button class="hair-type-btn outfit-btn" data-hair-type="careca" style="flex: 1;">👨 Careca</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coluna Direita: Distintivo de Preview -->
+          <div class="glass char-creator-preview">
+            <div class="police-badge-frame">
+              <div class="badge-header">POLÍCIA CIVIL</div>
+              <div class="badge-subheader">DECAP - DEPARTAMENTO DE INVESTIGAÇÕES</div>
+              
+              <div class="avatar-svg-wrapper">
+                <svg id="avatar-svg" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="48" fill="var(--bg-pure)" />
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,215,0,0.15)" stroke-width="1" />
+                  
+                  <g class="skin-element">
+                    <circle cx="31" cy="45" r="4.5" id="svg-ear-l" fill="#f5cba7" />
+                    <circle cx="69" cy="45" r="4.5" id="svg-ear-r" fill="#f5cba7" />
+                    <rect x="46" y="52" width="8" height="12" id="svg-neck" fill="#f5cba7" />
+                    <circle cx="50" cy="42" r="18" id="svg-head" fill="#f5cba7" />
+                  </g>
+                  
+                  <circle cx="43" cy="40" r="2" fill="#111" />
+                  <circle cx="57" cy="40" r="2" fill="#111" />
+                  <path d="M50 42 L50 45 L48 45" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="1.5" stroke-linecap="round" />
+                  <path d="M46 49 Q50 52 54 49" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="1.5" stroke-linecap="round" />
+
+                  <g id="svg-acc-mustache" style="display: none;">
+                    <path d="M42 47 Q50 44 58 47 Q53 50 50 48 Q47 50 42 47" fill="#3e2723" stroke="#1b120c" stroke-width="0.5" />
+                  </g>
+
+                  <g id="svg-acc-glasses" style="display: none;">
+                    <polygon points="34,37 47,37 45,43 36,43" fill="#111" stroke="#ffd700" stroke-width="1" />
+                    <polygon points="53,37 66,37 64,43 55,43" fill="#111" stroke="#ffd700" stroke-width="1" />
+                    <line x1="47" y1="39" x2="53" y2="39" stroke="#ffd700" stroke-width="1" />
+                  </g>
+
+                  <g id="svg-outfit-trenchcoat" style="display: block;">
+                    <path d="M30 65 L70 65 L74 95 L26 95 Z" fill="#bcaaa4" />
+                    <polygon points="35,65 50,75 50,65" fill="#8d6e63" />
+                    <polygon points="65,65 50,75 50,65" fill="#8d6e63" />
+                    <circle cx="45" cy="80" r="1.5" fill="#3e2723" />
+                    <circle cx="55" cy="80" r="1.5" fill="#3e2723" />
+                    <circle cx="45" cy="88" r="1.5" fill="#3e2723" />
+                    <circle cx="55" cy="88" r="1.5" fill="#3e2723" />
+                  </g>
+
+                  <g id="svg-outfit-suit" style="display: none;">
+                    <path d="M30 65 L70 65 L74 95 L26 95 Z" fill="#37474f" />
+                    <polygon points="44,65 56,65 50,76" fill="#ffffff" />
+                    <polygon points="48,70 52,70 53,88 50,92 47,88" fill="#d84315" />
+                    <polygon points="30,65 44,78 40,78" fill="#263238" />
+                    <polygon points="70,65 56,78 60,78" fill="#263238" />
+                  </g>
+
+                  <g id="svg-outfit-leather" style="display: none;">
+                    <path d="M30 65 L70 65 L74 95 L26 95 Z" fill="#3e2723" />
+                    <polygon points="44,65 56,65 50,72" fill="#212121" />
+                    <line x1="50" y1="72" x2="50" y2="95" stroke="#b0bec5" stroke-width="1.5" stroke-dasharray="1,1" />
+                    <polygon points="32,65 46,75 42,75" fill="#1b120c" />
+                    <polygon points="68,65 54,75 58,75" fill="#1b120c" />
+                  </g>
+
+                  <g id="svg-outfit-tactical" style="display: none;">
+                    <path d="M30 65 L70 65 L74 95 L26 95 Z" fill="#1a1a24" />
+                    <rect x="34" y="65" width="6" height="30" fill="#101015" />
+                    <rect x="60" y="65" width="6" height="30" fill="#101015" />
+                    <rect x="42" y="72" width="16" height="10" fill="#2d2d3a" rx="1" />
+                    <rect x="42" y="85" width="7" height="8" fill="#2d2d3a" rx="1" />
+                    <rect x="51" y="85" width="7" height="8" fill="#2d2d3a" rx="1" />
+                    <polygon points="37,76 39,78 38,81 35,79 32,81 33,78 35,76" fill="#ffd700" />
+                  </g>
+
+                  <!-- Hair Group -->
+                  <g id="svg-hair" fill="#111111">
+                    <!-- Short Hair -->
+                    <path id="svg-hair-short" d="M32 40 Q32 24 50 24 Q68 24 68 40 Q62 30 50 30 Q38 30 32 40" style="display: block;" />
+                    <!-- Long Hair -->
+                    <path id="svg-hair-long" d="M32 40 Q32 24 50 24 Q68 24 68 40 Q72 56 68 62 Q66 50 64 45 Q50 30 36 45 Q34 50 32 62 Q28 56 32 40" style="display: none;" />
+                    <!-- Curly Hair -->
+                    <path id="svg-hair-curly" d="M32 38 C30 34 32 28 36 26 C40 24 44 26 46 29 C48 26 52 26 54 29 C56 26 60 24 64 26 C68 28 70 34 68 38 C70 42 66 46 62 44 C50 42 50 42 38 44 C34 46 30 42 32 38" style="display: none;" />
+                    <!-- Bald Sideburns -->
+                    <path id="svg-hair-bald" d="M32 42 L33 46 M68 42 L67 46" stroke="#111111" stroke-width="1.5" stroke-linecap="round" style="display: none;" />
+                  </g>
+
+                  <g id="svg-acc-hat" style="display: none;">
+                    <ellipse cx="50" cy="27" rx="24" ry="3" fill="#3e2723" />
+                    <path d="M32 27 L35 15 Q50 12 65 15 L68 27 Z" fill="#3e2723" />
+                    <path d="M33.5 25 L35 21 Q50 18 65 21 L66.5 25 Z" fill="#bf360c" />
+                  </g>
+                </svg>
+              </div>
+
+              <div class="badge-title">CARGO: DETETIVE</div>
+              <div id="badge-name-display" class="badge-name">AGENTE ANÔNIMO</div>
+              <div id="badge-age-display" class="badge-age">IDADE: -- ANOS</div>
+            </div>
+            
+            <button id="create-char-btn" class="glass-btn yellow-glow" style="width: 100%; margin-top: 15px; font-weight: bold;">
+              🛡️ EMITIR DISTINTIVO & ABRIR CASO
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ETAPA 2: INTRODUÇÃO (DETETIVE NARRANDO) -->
+      <section id="stage-intro" class="stage-container">
+        <div class="glass intro-case-card" style="display: flex; gap: 20px; align-items: center;">
+          <div class="intro-avatar-wrapper" id="intro-avatar-container" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--color-yellow); overflow: hidden; background: var(--bg-dark); flex-shrink: 0; display: flex; align-items: center; justify-content: center; box-shadow: var(--glow-yellow);">
+            <!-- O SVG do avatar será injetado dinamicamente -->
+          </div>
+          <div style="flex: 1;">
+            <h2 class="yellow-glow" style="margin-top: 0; margin-bottom: 12px;">DETALHES DO CASO</h2>
+            <div class="intro-meta-grid" style="margin-bottom: 0;">
+              <div class="intro-meta-item">
+                <span>CASO</span>
+                <strong>DH-2023-7789</strong>
+              </div>
+              <div class="intro-meta-item">
+                <span>RESPONSÁVEL</span>
+                <strong>Detetive Andre M. Carvalho</strong>
+              </div>
+              <div class="intro-meta-item">
+                <span>DATA</span>
+                <strong>12/09/2023</strong>
+              </div>
+              <div class="intro-meta-item">
+                <span>SEU CARGO</span>
+                <strong id="intro-cargo-label">DETETIVE</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass">
+          <h2 class="yellow-glow" style="margin-top: 0; margin-bottom: 16px;">DEPOIMENTO DO DETETIVE</h2>
+          <p id="intro-narrative-text"></p>
+          <button id="intro-start-btn" class="glass-btn yellow-glow" onclick="Engine.setStage(3)">
+            📂 ACESSAR CENTRAL DE MAPEAMENTO 3D
+          </button>
+        </div>
+      </section>
+
+      <!-- ETAPA 2: CENA DO CRIME 3D INTERATIVA -->
+      <section id="stage-crime_scene" class="stage-container">
+        <div class="glass">
+          <h2 class="red-glow">Mapeamento da cena do crime</h2>
+          
+          <!-- Wrapper da Cozinha 3D em Three.js -->
+          <div class="crime-scene-3d-wrapper">
+            <div id="crime-scene-3d-container"></div>
+            <!-- Painel de Seleção de Câmeras Fixas -->
+            <div class="camera-control-overlay" style="position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 4px; z-index: 10; background: rgba(0, 0, 0, 0.65); padding: 6px; border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(4px);">
+              <span style="font-family: monospace; font-size: 0.5rem; color: #aaa; text-align: center; font-weight: bold; margin-bottom: 1px; letter-spacing: 0.3px;">🎥 CÂMERAS HUD</span>
+              <button class="camera-btn active" data-camera="corpo" style="font-family: monospace; font-size: 0.58rem; background: rgba(255, 51, 51, 0.2); border: 1px solid #ff3333; color: white; padding: 3px 6px; border-radius: 3px; cursor: pointer; text-align: left; transition: all 0.2s; outline: none;">
+                CAM-01: Corpo (Vítima)
+              </button>
+              <button class="camera-btn" data-camera="celular" style="font-family: monospace; font-size: 0.58rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #ccc; padding: 3px 6px; border-radius: 3px; cursor: pointer; text-align: left; transition: all 0.2s; outline: none;">
+                CAM-02: Celular
+              </button>
+              <button class="camera-btn" data-camera="vidro" style="font-family: monospace; font-size: 0.58rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #ccc; padding: 3px 6px; border-radius: 3px; cursor: pointer; text-align: left; transition: all 0.2s; outline: none;">
+                CAM-03: Vidro
+              </button>
+            </div>
+          </div>
+          <div class="scene-hint-text">[+] ARRASTE PARA GIRAR A CENA | TOQUE NAS PISTAS</div>
+        </div>
+      </section>
+
+      <!-- ETAPA 3: LAUDO DA AUTÓPSIA (CORPO 3D INTERATIVO) -->
+      <section id="stage-autopsy" class="stage-container">
+        <div class="glass">
+          <h2 class="red-glow">Autópsia 3D - Análise Corporal</h2>
+          <p id="autopsy-general-intro" style="font-size: 0.75rem; color: var(--color-gray); margin-bottom: 12px; line-height: 1.4;">
+            Carregando manequim médico-legal do corpo de Daniela Alborghetti...
+          </p>
+
+          <div class="autopsy-layout">
+            <!-- Canvas do boneco wireframe 3D rotacionável -->
+            <div class="autopsy-3d-wrapper">
+              <div id="autopsy-3d-canvas-container"></div>
+            </div>
+            
+            <!-- Descrição dinâmica do ferimento clicado -->
+            <div id="autopsy-details-viewer">
+              <div class="empty-viewer">
+                Arraste para rotacionar o manequim 3D e clique nas esferas vermelhas de ferimentos.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ETAPA 4: FICHAS DOS SUSPEITOS POLAROID -->
+      <section id="stage-suspects" class="stage-container">
+        <div class="glass">
+          <h2 class="yellow-glow">Suspeitos</h2>
+          <p style="font-size: 0.75rem; color: var(--color-gray); margin-bottom: 16px;">
+            Ajuste a probabilidade de culpa de acordo com as características do suspeitos.
+          </p>
+          <div id="suspects-grid">
+            <!-- Injetado via js/ui.js -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ETAPA 5: INTERROGATÓRIOS -->
+      <section id="stage-interrogations" class="stage-container">
+        <div class="glass">
+          <h2 class="yellow-glow">Interrogatórios Policiais</h2>
+          <p style="font-size: 0.75rem; color: var(--color-gray); margin-bottom: 12px;">
+            Inicie sessões de chat interativo com os depoentes para refutar seus álibis físicos.
+          </p>
+          
+          <!-- Indicador de Limite de Interrogatórios -->
+          <div id="interrogations-counter" style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--color-yellow); margin-bottom: 12px; padding: 6px 10px; background: rgba(128, 0, 0, 0.04); border: 1px dashed var(--border-glass); border-radius: 4px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;">
+            <span>📋 DEPOIMENTOS DISPONÍVEIS:</span>
+            <strong><span id="interrogations-count">0</span> / 3</strong>
+          </div>
+
+          <div id="interrogation-suspects-list">
+            <!-- Injetado via js/ui.js -->
+          </div>
+
+          <div class="glass interrogation-panel">
+            <div class="doc-view-header" style="margin-bottom: 10px;">
+              <h3 id="interrogate-title" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-yellow);">
+                Selecione um suspeito acima
+              </h3>
+            </div>
+            
+            <div id="interrogation-chat-container">
+              <div class="chat-message system">
+                [AGUARDANDO CONEXÃO DE AUDIÊNCIA...]
+              </div>
+            </div>
+
+            <div id="interrogation-questions">
+              <!-- Botões de perguntas -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ETAPA 6: CELULAR DA VÍTIMA INTERATIVO (DECODIFICADOR) -->
+      <section id="stage-phone_bypass" class="stage-container">
+        <div class="glass" style="padding-bottom: 24px;">
+          <h2 class="red-glow">Celular da Vítima</h2>
+          <p style="font-size: 0.75rem; color: var(--color-gray); margin-bottom: 16px;">
+            Encontre a senha numérica lógica na mesa decorada física e digite-a no smartphone para liberar as conversas e chaves de e-mail.
+          </p>
+          
+          <div id="phone-bypass-wrapper">
+            <!-- Injetado dinamicamente via js/ui.js (tela de bloqueio com teclado ou celular desbloqueado) -->
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ETAPA 9: ACUSAÇÃO FINAL & REVELAÇÃO -->
+      <section id="stage-accusation" class="stage-container">
+        <!-- Formulário do Mandado -->
+        <div class="glass accusation-panel" id="accusation-form">
+          <h2 class="red-glow">Emitir Mandado Judicial</h2>
+          <p>
+            Chegou a hora de encerrar o inquérito policial. Selecione o suspeito principal para a revelação final cinematográfica.
+          </p>
+          
+          <form>
+            <div class="form-group">
+              <label for="accuse-killer">🚨 INDICIAR ASSASSINO PRINCIPAL:</label>
+              <select id="accuse-killer" class="form-select" required>
+                <!-- Gerado dinamicamente -->
+              </select>
+            </div>
+
+            <button type="submit" class="glass-btn red-glow submit-accusation-btn">
+              ⚖️ SUBMETER VEREDITO POLICIAL
+            </button>
+          </form>
+        </div>
+
+        <!-- Painel de Revelação (Oculto até submeter) -->
+        <div id="revelation-container">
+          <!-- Injetado dinamicamente via js/ui.js -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- INVENTÁRIO DOCK FLUTUANTE (RODAPÉ) -->
+    <footer id="inventory-dock">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="margin: 0; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 1px; color: var(--color-gray);">💼 EVIDÊNCIAS COLETADAS</h3>
+        <button id="toggle-inventory-btn" class="hud-btn" onclick="UI.toggleInventory()" style="padding: 2px 8px; font-size: 0.65rem;">Ocultar</button>
+      </div>
+      <div id="inventory-list">
+        <!-- Injetado dinamicamente via js/ui.js -->
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- MODAL DE INSPEÇÃO DETALHADA DE PISTA EM 3D -->
+  <div id="clue-modal">
+    <div class="glass clue-modal-content">
+      <div class="clue-modal-header">
+        <h2 id="clue-modal-title" class="yellow-glow">Nome da Pista</h2>
+        <span id="clue-modal-category" class="clue-tag">Categoria</span>
+      </div>
+      
+      <!-- Visualizador Closeup 3D Rotacionável -->
+      <div id="clue-inspect-3d-canvas"></div>
+      
+      <div id="clue-modal-desc">
+        Descrição inicial da evidência.
+      </div>
+      <div id="clue-modal-details">
+        <!-- Detalhes desbloqueados -->
+      </div>
+      
+      <button class="glass-btn" style="width:100%" onclick="UI.closeClueModal()">
+        [FECHAR INSPEÇÃO 3D]
+      </button>
+    </div>
+  </div>
+
+  <!-- SCRIPTS DO MISTÉRIO -->
+  <script src="/data.js"></script>
+  <script src="/sound.js"></script>
+  <script src="/engine.js"></script>
+  <script src="/ui.js"></script>
+
+</body>
+</html>
